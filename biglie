@@ -1,0 +1,99 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define NMIN 1
+#define NMAX 100000
+#define NUM_BOXES 100
+
+// Funzioni dichiarate
+void assignNumbers(int *boxes, int size);
+int findLargestLoopDimension(int *boxes, int size, int *loop_counts);
+void salvaFrequenze(int *frequencies, int size, int total_assignments);
+
+int main() {
+    int num_assignments;
+    int boxes[NUM_BOXES];
+    int loop_counts[NUM_BOXES + 1] = {0}; // Per contare i loop di ogni dimensione
+    int largest_loop = 0;
+
+    printf("Inserisci il numero di assegnazioni (%d-%d): ", NMIN, NMAX);
+    scanf("%d", &num_assignments);
+
+    while (num_assignments < NMIN || num_assignments > NMAX) {
+        printf("Numero non valido. Riprova: ");
+        scanf("%d", &num_assignments);
+    }
+
+    srand(time(NULL));
+
+    for (int i = 0; i < num_assignments; i++) {
+        assignNumbers(boxes, NUM_BOXES);
+        largest_loop = findLargestLoopDimension(boxes, NUM_BOXES, loop_counts);
+    }
+
+    salvaFrequenze(loop_counts, NUM_BOXES, num_assignments);
+
+    printf("Risultati salvati nel file freq.dat\n");
+    return 0;
+}
+
+void assignNumbers(int *boxes, int size) {
+    for (int i = 0; i < size; i++) {
+        boxes[i] = i + 1;
+    }
+
+    for (int i = size - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+        int temp = boxes[i];
+        boxes[i] = boxes[j];
+        boxes[j] = temp;
+    }
+}
+
+int findLargestLoopDimension(int *boxes, int size, int *loop_counts) {
+    int visited[size];
+    int largest_loop = 0;
+    int loop_count = 0;
+
+    for (int i = 0; i < size; i++) {
+        visited[i] = 0;
+    }
+
+    for (int i = 0; i < size; i++) {
+        if (!visited[i]) {
+            int current = i, loop_size = 0;
+
+            while (!visited[current]) {
+                visited[current] = 1;
+                current = boxes[current] - 1; // Scatole numerate da 1
+                loop_size++;
+            }
+
+            loop_counts[loop_size]++;
+            if (loop_size > largest_loop) {
+                largest_loop = loop_size;
+            }
+            loop_count++;
+        }
+    }
+
+    printf("Il loop più grande è costituito da %d scatole.\n", largest_loop);
+    return loop_count;
+}
+
+void salvaFrequenze(int *frequencies, int size, int total_assignments) {
+    FILE *file = fopen("freq.dat", "w");
+    if (file == NULL) {
+        printf("Errore nell'apertura del file.\n");
+        return;
+    }
+
+    for (int i = 1; i <= size; i++) {
+        if (frequencies[i] > 0) {
+            fprintf(file, "%d %.4f\n", i, (double)frequencies[i] / total_assignments);
+        }
+    }
+
+    fclose(file);
+}
